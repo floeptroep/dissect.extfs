@@ -84,6 +84,27 @@ def test_symlinks(ext4_symlink_bin: BinaryIO) -> None:
     assert extfs.get(path).link == "../../../../other/path/source/to/my/file.ext"
 
 
+def test_htree_collision(ext4_htree_collision_bin: BinaryIO) -> None:
+    extfs = ExtFS(ext4_htree_collision_bin)
+
+    htree_dir = extfs.get("/dir")
+    assert htree_dir.inode.i_flags & c_ext.EXT4_INDEX_FL != 0
+
+    name = (
+        "this-is-a-rather-long-test-filename-for-dissect-extfs-in-order-to-force"
+        "-overflow-into-the-next-block-on-hash-collisions-0000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000000000000000019350a9"
+    )
+
+    # htree lookup falls back on iterdir if a file is not found.
+    with patch("dissect.extfs.extfs.INode.iterdir", return_value=[]):
+        collided_file = htree_dir.lookup(name)
+
+    assert collided_file is not None
+    assert collided_file.open().read() == b"this is a dissect htree test file\n"
+
+
 @patch("dissect.extfs.extfs.INode.open", return_value=BytesIO(b"\x00" * 16))
 @patch("dissect.extfs.extfs.log", create=True, return_value=None)
 @patch("dissect.extfs.extfs.ExtFS")

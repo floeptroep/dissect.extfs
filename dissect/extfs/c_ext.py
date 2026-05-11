@@ -102,6 +102,16 @@ ext_def = """
 #define EXT2_FL_USER_VISIBLE                    0x304BDFFF      // User visible flags
 #define EXT2_FL_USER_MODIFIABLE                 0x204BC0FF      // User modifiable flags
 
+#define DX_HASH_LEGACY                          0x00
+#define DX_HASH_HALF_MD4                        0x01
+#define DX_HASH_TEA                             0x02
+#define DX_HASH_LEGACY_UNSIGNED                 0x03
+#define DX_HASH_HALF_MD4_UNSIGNED               0x04
+#define DX_HASH_TEA_UNSIGNED                    0x05
+
+#define EXT4_HTREE_EOF_32BIT                    0x7fffffff
+#define EXT4_HTREE_EOF_64BIT                    0x7fffffffffffffff
+
 struct ext4_super_block {
     uint32      s_inodes_count;             /* Inodes count */
     uint32      s_blocks_count_lo;          /* Blocks count */
@@ -297,11 +307,18 @@ struct ext4_dir_entry_tail {
     uint32      det_checksum;               /* crc32c(uuid+inum+dirblock) */
 };
 
+struct fake_dirent {
+    uint32      inode;
+    uint16      rec_len;
+    uint8       name_len;
+    uint8       file_type;
+}
+
 struct dx_root {
-    ext2_dir_entry_2    dot;
-    char                _pad0[3];
-    ext2_dir_entry_2    dotdot;
-    char                _pad1[2];
+    fake_dirent         dot;
+    char                dot_name[4];
+    fake_dirent         dotdot;
+    char                dotdot_name[4];
     uint32              reserved_zero;
     uint8               hash_version;
     uint8               info_length;
